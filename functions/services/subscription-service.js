@@ -44,6 +44,10 @@ const REAL_PROXY_PROTOCOLS = [
     'anytls://',
     'socks5://',
     'socks://',
+    'http://',
+    'https://',
+    'naive+https://',
+    'naive+quic://',
     'wireguard://',
 ];
 
@@ -671,7 +675,7 @@ export async function generateCombinedNodeList(
     // 重构后的手动节点处理逻辑
     const manualSubSourceGroups = misubs.filter((sub) => {
         const url = typeof sub?.url === 'string' ? sub.url.trim() : '';
-        return Boolean(url) && !url.toLowerCase().startsWith('http');
+        return Boolean(url) && !/^https?:\/\//i.test(url);
     });
 
     let manualProcessedLines = [];
@@ -704,10 +708,11 @@ export async function generateCombinedNodeList(
             // Ignore
         }
     }
-    const processedManualNodes = manualProcessedLines.join('\n');
+
+    const processedManualNodeList = manualProcessedLines.join('\n');
 
     const httpSubs = misubs.filter(
-        (sub) => sub && sub.url && sub.url.toLowerCase().startsWith('http')
+        (sub) => sub && sub.url && /^https?:\/\//i.test(sub.url) && !/^https?:\/\/[^/?#]+:\d+\/?#/i.test(sub.url)
     );
     const limiter = createConcurrencyLimiter(FETCH_CONFIG.CONCURRENCY);
     let upstreamSuccessCount = 0; // 追踪真正从远程拉取成功的订阅数（不含 per-sub 缓存回退）
@@ -876,7 +881,7 @@ export async function generateCombinedNodeList(
     const processedSubContents = await Promise.all(subPromises);
 
     // --- 阶段 1: 原始数据汇聚 (Raw Data Aggregation) ---
-    const rawCombinedLines = (processedManualNodes + '\n' + processedSubContents.join('\n'))
+    const rawCombinedLines = (processedManualNodeList + '\n' + processedSubContents.join('\n'))
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean);

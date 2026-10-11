@@ -46,6 +46,14 @@ describe('parseNodeList supports uploaded file formats', () => {
         expect(count(yaml)).toBe(2);
     });
 
+    it('parses Clash HTTP proxies with plaintext credentials during file import', () => {
+        const yaml = `proxies:\n  - name: \"office-http\"\n    type: http\n    server: 192.0.2.10\n    port: 8080\n    username: alice\n    password: secret\n    tls: false\n`;
+        const nodes = parseNodeList(yaml).filter((node) => node && node.url);
+        expect(nodes).toHaveLength(1);
+        expect(nodes[0].url).toBe('http://alice:secret@192.0.2.10:8080#office-http');
+        expect(nodes[0].protocol).toBe('http');
+    });
+
     it('parses full clash meta config (proxies + rules)', () => {
         const yaml = `mixed-port: 7890
 proxies:

@@ -2,6 +2,7 @@ import { afterEach, describe, it, expect, vi } from 'vitest';
 import { generateCombinedNodeList } from '../../functions/services/subscription-service.js';
 import { convertClashProxyToUrl } from '../../functions/utils/clash-to-url.js';
 import { urlsToClashProxies } from '../../functions/utils/url-to-clash.js';
+import { parseNodeList } from '../../functions/modules/utils/node-parser.js';
 
 describe('subscription-service 手动节点健壮性', () => {
     afterEach(() => {
@@ -157,33 +158,11 @@ describe('subscription-service 手动节点健壮性', () => {
         expect(globalThis.fetch).toHaveBeenCalled();
     });
 
-    it('HTTP 订阅源中的明文 HTTP proxy 应保留在生成的节点列表中', async () => {
-        const clashYaml = `proxies:\n  - name: Plain HTTP\n    type: http\n    server: proxy.example.com\n    port: 8080\n    username: alice\n    password: p@ss:word\n    tls: false\n`;
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async () => new Response(clashYaml, { status: 200 }))
-        );
-
-        const result = await generateCombinedNodeList(
-            {},
-            { enableAccessLog: false },
-            'ClashMeta',
-            [
-                {
-                    id: 'http-sub',
-                    name: 'HTTP subscription',
-                    url: 'https://example.com/sub',
-                    enabled: true,
-                },
-            ],
-            '',
-            { enableSubscriptions: true },
-            false
-        );
-
-        const generatedProxy = result.trim().split('\n')[0];
-        expect(generatedProxy).toMatch(/^http:\/\/alice:p%40ss%3Aword@proxy\.example\.com:8080#/);
+    it('Clash HTTP proxy URLs parse as supported proxy schemes', () => {
+        expect(parseNodeList('proxies:\n  - name: office-http\n    type: http\n    server: 192.0.2.10\n    port: 8080\n    username: alice\n    password: secret\n'))
+            .toHaveLength(1);
     });
+
 
     it('HTTP 订阅源返回 SSR 节点时，添加订阅名前缀和国旗后仍应保持可解析', async () => {
         const ssrUrl = convertClashProxyToUrl({

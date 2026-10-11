@@ -136,37 +136,29 @@ export async function handleProfileMode(
     const misubMap = new Map(relatedSubs.map((item) => [item.id, item]));
 
     const targetMisubs = [];
+    const profileSubIds = (profile.subscriptions || []).map((item) =>
+        typeof item === 'object' ? item.id : item
+    );
+    profileSubIds.forEach((id) => {
+        const sub = misubMap.get(id);
+        if (sub && sub.enabled && /^https?:\/\//i.test(sub.url)) {
+            targetMisubs.push(sub);
+        }
+    });
 
-    // 1. Add subscriptions in order defined by profile
-    const profileSubIds = profile.subscriptions || [];
-    if (Array.isArray(profileSubIds)) {
-        profileSubIds.forEach((id) => {
-            const sub = misubMap.get(id);
-            if (sub && sub.enabled && sub.url.startsWith('http')) {
-                targetMisubs.push(sub);
-            }
-        });
-    }
-
-    // 2. Add manual nodes in order defined by profile
+    const targetManualNodes = [];
     const profileNodeIds = profile.manualNodes || [];
     if (Array.isArray(profileNodeIds)) {
         profileNodeIds.forEach((id) => {
             const node = misubMap.get(id);
-            if (node && node.enabled && !node.url.startsWith('http')) {
-                targetMisubs.push(node);
-            }
+            if (node && node.enabled) targetManualNodes.push(node);
         });
     }
 
-    // 分离HTTP订阅和手工节点
-    const targetSubscriptions = targetMisubs.filter((item) => item.url.startsWith('http'));
-    const targetManualNodes = targetMisubs.filter((item) => !item.url.startsWith('http'));
-
-    // 处理手工节点（直接解析节点URL）
-    // 先将用户自定义名称写入 URL（与订阅生成流程保持一致），
-    // 确保 parseNodeInfo 和节点转换管道能基于正确名称工作
-    const manualNodeResults = targetManualNodes.map((node) => {
+    const targetSubscriptions = targetMisubs.filter((sub) => !/^https?:\/\/[^/?#]+:\d+(?:[/?#]|$)/i.test(sub.url));
+    const manualNodes = targetMisubs.filter((sub) => !targetSubscriptions.includes(sub));
+    // 处理手工节点（直接解析节点URL），并将用户自定义名称写入 URL。
+    const manualNodeResults = manualNodes.map((node) => {
         const customName = typeof node.name === 'string' ? node.name.trim() : '';
         const effectiveUrl = customName ? applyManualNodeName(node.url, customName) : node.url;
 
