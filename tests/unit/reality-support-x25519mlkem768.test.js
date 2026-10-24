@@ -6,7 +6,7 @@ import { generateBuiltinClashConfig } from '../../functions/modules/subscription
 import { extractValidNodes } from '../../functions/modules/utils/node-parser.js';
 
 describe('VLESS / Reality support-x25519mlkem768 特性支持', () => {
-    it('标准 VLESS Reality 节点默认应自动添加 support-x25519mlkem768: true', () => {
+    it('标准 VLESS Reality 节点不带开关参数时不自动启用 x25519mlkem768', () => {
         const url =
             'vless://uuid-1234@reality.example.com:443?security=reality&pbk=pubkey123&sid=sid123&fp=chrome#RealityNode';
         const proxy = urlToClashProxy(url);
@@ -16,7 +16,7 @@ describe('VLESS / Reality support-x25519mlkem768 特性支持', () => {
         expect(proxy['reality-opts']).toBeDefined();
         expect(proxy['reality-opts']['public-key']).toBe('pubkey123');
         expect(proxy['reality-opts']['short-id']).toBe('sid123');
-        expect(proxy['reality-opts']['support-x25519mlkem768']).toBe(true);
+        expect(proxy['reality-opts']['support-x25519mlkem768']).toBeUndefined();
     });
 
     it('当 URL 显式指定 support-x25519mlkem768=false 或 0 时不应启用', () => {
@@ -73,7 +73,7 @@ describe('VLESS / Reality support-x25519mlkem768 特性支持', () => {
 
     it('generateBuiltinClashConfig 生成的 YAML 中应正确包含 support-x25519mlkem768: true', () => {
         const url =
-            'vless://uuid-1234@reality.example.com:443?security=reality&pbk=pubkey123&sid=sid123#MyReality';
+            'vless://uuid-1234@reality.example.com:443?security=reality&pbk=pubkey123&sid=sid123&support-x25519mlkem768=true#MyReality';
         const yamlConfig = generateBuiltinClashConfig(url);
         const parsed = yaml.load(yamlConfig);
 
@@ -96,13 +96,13 @@ describe('VLESS / Reality support-x25519mlkem768 特性支持', () => {
         });
     });
 
-    it('Trojan 协议配合 Reality 时也应支持 support-x25519mlkem768', () => {
+    it('Trojan Reality 不带开关参数时不应自动启用 support-x25519mlkem768', () => {
         const trojanUrl =
             'trojan://password123@trojan.example.com:443?security=reality&pbk=pubkey123&sid=sid123#TrojanReality';
         const proxy = urlToClashProxy(trojanUrl);
 
         expect(proxy.type).toBe('trojan');
         expect(proxy['reality-opts']).toBeDefined();
-        expect(proxy['reality-opts']['support-x25519mlkem768']).toBe(true);
+        expect(proxy['reality-opts']['support-x25519mlkem768']).toBeUndefined();
     });
 });

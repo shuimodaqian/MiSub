@@ -55,6 +55,30 @@ describe('protocol conversion fixtures', () => {
         );
     });
 
+    it('preserves TLS and certificate settings on Clash HTTP proxies through URL round-trip', () => {
+        expectRoundTrip(
+            {
+                name: 'TLS HTTP',
+                type: 'http',
+                server: 'proxy.example.com',
+                port: 443,
+                tls: true,
+                'skip-cert-verify': true,
+                servername: 'proxy.example.com',
+            },
+            {
+                name: 'TLS HTTP',
+                type: 'http',
+                server: 'proxy.example.com',
+                port: 443,
+                tls: true,
+                'skip-cert-verify': true,
+                servername: 'proxy.example.com',
+                sni: 'proxy.example.com',
+            }
+        );
+    });
+
     it('parses plain HTTP proxy URIs as HTTP proxies with credentials', () => {
         expectParseOnly('http://alice:p%40ss%3Aword@proxy.example.com:8080#plain-http', {
             name: 'plain-http',
@@ -467,7 +491,7 @@ describe('protocol conversion fixtures', () => {
                 url: 'https://user:p%40ss%3Aword@https.example.com:443?sni=https-sni.example.com&allowInsecure=1#Fixture%20HTTPS',
                 expected: {
                     name: 'Fixture HTTPS',
-                    type: 'https',
+                    type: 'http',
                     server: 'https.example.com',
                     port: 443,
                     username: 'user',
@@ -513,6 +537,35 @@ describe('protocol conversion fixtures', () => {
         for (const fixture of fixtures) {
             expectParseOnly(fixture.url, fixture.expected);
         }
+    });
+
+    it('preserves TLS and certificate settings through the builtin Clash subscription output', () => {
+        const clashConfig = `
+proxies:
+  - name: TLS HTTP
+    type: http
+    server: proxy.example.com
+    port: 443
+    tls: true
+    skip-cert-verify: true
+    servername: proxy.example.com
+`;
+        const nodes = extractValidNodes(clashConfig);
+        expect(nodes).toHaveLength(1);
+        expect(nodes[0]).toMatch(/https:/);
+        expect(nodes[0]).toContain('allowInsecure=1');
+
+        const generated = yaml.load(
+            generateBuiltinClashConfig(nodes.join('\n'), { addFlagEmoji: false })
+        );
+        expect(generated.proxies[0]).toMatchObject({
+            name: 'TLS HTTP',
+            type: 'http',
+            server: 'proxy.example.com',
+            port: 443,
+            tls: true,
+            'skip-cert-verify': true,
+        });
     });
 
     it('preserves VLESS gRPC service options from Clash YAML through URL and builtin Clash output', () => {

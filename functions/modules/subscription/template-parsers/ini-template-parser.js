@@ -162,6 +162,21 @@ function parseAclProxyGroupLine(line) {
     return { name, type, members, filters, options };
 }
 
+/**
+ * 解析链式代理声明。
+ * 语法：custom_chain_proxy=<落地组名>`<前置组名>[`<落地副本名前缀>]
+ * 前缀省略时默认为 "<落地组名> - "。
+ */
+function parseChainProxyLine(line) {
+    const raw = line.replace(/^\s*/, '').replace(/^custom_chain_proxy=/i, '');
+    const parts = raw.split('`');
+    const group = (parts[0] || '').trim();
+    const entry = (parts[1] || '').trim();
+    if (!group || !entry || group === entry) return null;
+    // 前缀不 trim：允许以空格结尾（如 "CHAIN: "），否则无法表达分隔符。
+    return { group, entry, prefix: parts.length > 2 ? parts[2] : '' };
+}
+
 export function parseIniTemplate(templateText, options = {}) {
     const sections = parseIniSections(templateText);
     const aclCustomLines = sections.get('custom') || [];
@@ -172,6 +187,10 @@ export function parseIniTemplate(templateText, options = {}) {
     const parsedAclRules = aclCustomLines
         .filter((line) => /^ruleset=/i.test(line.trim()))
         .map(parseAclRuleSetLine)
+        .filter(Boolean);
+    const parsedChainProxy = aclCustomLines
+        .filter((line) => /^custom_chain_proxy=/i.test(line.trim()))
+        .map(parseChainProxyLine)
         .filter(Boolean);
 
     const groups = (sections.get('proxy group') || [])
@@ -204,5 +223,6 @@ export function parseIniTemplate(templateText, options = {}) {
             customDnsOverride: options.customDnsOverride || '',
             dnsMode: options.dnsMode || 'clean',
         },
+        extras: parsedChainProxy.length > 0 ? { chainProxy: parsedChainProxy } : {},
     });
 }

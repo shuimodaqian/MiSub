@@ -31,12 +31,33 @@ export function convertClashProxyToUrl(proxy) {
 
         if (!server || !port) return null;
 
+        if (type === 'mieru') {
+            const params = new URLSearchParams();
+            for (const key of ['username', 'password', 'transport', 'udp', 'multiplexing', 'handshake-mode', 'mtu', 'profile']) {
+                if (proxy[key] !== undefined && proxy[key] !== null) params.set(key, String(proxy[key]));
+            }
+            return `mierus://${formatUriServer(server)}:${port}?${params.toString()}#${encodeURIComponent(name)}`;
+        }
+
         if (type === 'http' || type === 'https') {
-            const scheme = type === 'https' ? 'https' : 'http';
+            const useTls = type === 'https' || proxy.tls === true;
+            const scheme = useTls ? 'https' : 'http';
             const userInfo = proxy.username
                 ? `${encodeURIComponent(proxy.username)}${proxy.password ? `:${encodeURIComponent(proxy.password)}` : ''}@`
                 : '';
-            return `${scheme}://${userInfo}${uriServer}:${port}#${encodeURIComponent(name)}`;
+            const params = new URLSearchParams();
+            if (useTls) {
+                const sni = proxy.sni || proxy.servername;
+                if (sni) params.set('sni', sni);
+                if (proxy['skip-cert-verify'] !== undefined) {
+                    params.set('allowInsecure', proxy['skip-cert-verify'] ? '1' : '0');
+                }
+                const fingerprint = proxy['client-fingerprint'] || proxy.fingerprint;
+                if (fingerprint) params.set('fp', fingerprint);
+                if (proxy.alpn) params.set('alpn', Array.isArray(proxy.alpn) ? proxy.alpn.join(',') : proxy.alpn);
+            }
+            const query = params.toString();
+            return `${scheme}://${userInfo}${uriServer}:${port}${query ? `?${query}` : ''}#${encodeURIComponent(name)}`;
         }
 
         if (type === 'ss' || type === 'shadowsocks') {

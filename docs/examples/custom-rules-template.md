@@ -82,6 +82,39 @@ MATCH,🚀 节点选择
 
 ---
 
+## 🔗 链式代理（Mihomo / Meta）
+
+链式代理（前置跳板 → 落地节点）在 Mihomo / Meta 内核上通过**节点级 `dialer-proxy`** 实现，
+旧的 `relay` 策略组已被内核移除，不要再使用。
+
+MiSub 的 ini 模板支持用 `custom_chain_proxy` 声明链式代理：
+
+```ini
+# 语法：custom_chain_proxy=<落地组名>`<前置组名>[`<落地副本名前缀>]
+# 前缀省略时默认为 "<落地组名> - "
+[custom]
+custom_proxy_group=🔗 链式落地`select`[]🔗 链式前置
+custom_proxy_group=🔗 链式前置`select`.*
+custom_chain_proxy=🔗 链式落地`🔗 链式前置
+```
+
+MiSub 会据此展开：
+
+1. 为每个节点生成一份带 `dialer-proxy: 🔗 链式前置` 的落地副本，命名为 `🔗 链式落地 - <节点名>`；
+2. 把 `🔗 链式落地` 组改为选择这些落地副本；
+3. 保证 `🔗 链式前置` 只引用原始节点，避免 `dialer-proxy` 形成环路。
+
+落地组与前置组若未在模板中声明，MiSub 会自动创建：前置组包含全部原始节点，落地组包含全部落地副本。
+
+> ⚠️ 注意事项
+>
+> - 链式代理是 **Mihomo / Meta 专属能力**。普通 Clash 内核（Clash Premium、Clash for Windows 等）
+>   不认识 `dialer-proxy`，MiSub 会自动跳过展开，模板退化为普通策略组。
+> - 前置组**不能**引用落地组或落地副本，否则会形成无限环路（Mihomo 没有环路检测）。
+> - 节点数量会翻倍（每个节点多一份落地副本），节点很多时请留意配置体积。
+
+---
+
 ## 🚀 如何在 GitHub 上使用
 
 1.  将上述规则保存为 `my-rules.list` 或直接集成到你的 `.ini` 模板文件中。

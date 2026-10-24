@@ -16,7 +16,7 @@ import {
     buildGroupedManualNodes,
     normalizeManualNodeGroupName,
 } from '../../src/composables/manual-nodes/groups.js';
-import { filterManualNodes } from '../../src/composables/manual-nodes/filters.js';
+import { filterManualNodes, isManualNodeEntry } from '../../src/composables/manual-nodes/filters.js';
 import { messages } from '../../src/i18n/messages.js';
 import { setLocale } from '../../src/i18n/index.js';
 
@@ -61,6 +61,20 @@ describe('未分组过滤与语言无关', () => {
         expect(normalizeManualNodeGroupName(NODES[1].group)).toBe('');
     });
 
+    it('HTTP(S) proxy URI with credentials is listed as a manual node, not a subscription URL', () => {
+        const node = { id: 'http-proxy', name: 'HTTP proxy', url: 'http://alice:secret@proxy.example.com:8080#node' };
+        expect(isManualNodeEntry(node)).toBe(true);
+        expect(filterManualNodes([node], '', '')).toEqual([node]);
+    });
+
+    it('ordinary HTTP(S) URLs remain subscriptions rather than manual nodes', () => {
+        expect(isManualNodeEntry({ url: 'https://example.com/subscription' })).toBe(false);
+        expect(isManualNodeEntry({ url: 'http://proxy.example.com:8080' })).toBe(false);
+    });
+
+    it('non-HTTP protocol node classification remains unchanged', () => {
+        expect(isManualNodeEntry({ url: 'ss://cipher@proxy.example.com:443' })).toBe(true);
+    });
     it('按具体分组名过滤仍然正常', () => {
         expect(filterManualNodes(NODES, '', '香港').map((n) => n.id)).toEqual(['c']);
     });

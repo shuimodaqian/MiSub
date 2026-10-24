@@ -49,6 +49,7 @@ const REAL_PROXY_PROTOCOLS = [
     'naive+https://',
     'naive+quic://',
     'wireguard://',
+    'mierus://',
 ];
 
 /**

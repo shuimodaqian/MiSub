@@ -69,7 +69,8 @@ describe('Built-in Sing-box generator', () => {
     it('should enable TLS for https and socks5-tls', () => {
         const result = generateBuiltinSingboxConfig(
             [
-                'https://user:pass@1.2.3.4:443#HttpsNode',
+                'https://user:***@1.2.3.4:443#HttpsNode',
+                'https://user:pass@9.8.7.6:443?allowInsecure=1#TlsHttpNode',
                 'socks5://user:pass@5.6.7.8:1080#PlainSocks',
                 'socks5://user:pass@5.6.7.8:1081?tls=1#TlsSocks',
             ].join('\n')
@@ -77,9 +78,12 @@ describe('Built-in Sing-box generator', () => {
         const parsed = JSON.parse(result);
         const httpsNode = parsed.outbounds.find((outbound) => outbound.tag.endsWith('HttpsNode'));
         const socksNode = parsed.outbounds.find((outbound) => outbound.tag.endsWith('TlsSocks'));
+        const tlsHttpNode = parsed.outbounds.find((outbound) => outbound.tag.endsWith('TlsHttpNode'));
 
         expect(httpsNode?.tls?.enabled).toBe(true);
         expect(socksNode?.tls?.enabled).toBe(true);
+        expect(tlsHttpNode?.tls?.enabled).toBe(true);
+        expect(tlsHttpNode?.tls?.insecure).toBe(true);
     });
 
     it('uses split DNS server objects while preserving Trojan websocket transport', () => {

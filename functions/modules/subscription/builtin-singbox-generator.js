@@ -212,10 +212,11 @@ function buildOutbound(proxy) {
         outbound.server_port = port;
         if (proxy.username) outbound.username = proxy.username;
         if (proxy.password) outbound.password = proxy.password;
-        if (type === 'https') {
+        if (type === 'https' || proxy.tls || proxy.sni || proxy.servername) {
             outbound.tls = {
                 enabled: true,
                 server_name: proxy.sni || proxy.servername || server,
+                insecure: proxy['skip-cert-verify'] === true || proxy.skipCertVerify === true,
             };
         }
     } else if (type === 'socks5' || type === 'socks5-tls') {

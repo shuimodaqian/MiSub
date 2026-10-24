@@ -11,7 +11,7 @@ import { extractNodeMetadata } from '../modules/utils/metadata-extractor.js';
  * 节点协议正则表达式
  */
 export const NODE_PROTOCOL_REGEX =
-    /^(ss|ssr|vmess|vless|trojan|hysteria2?|hy|hy2|tuic|snell|anytls|socks5|socks|wireguard|naive\+https?|naive\+quic):\/\//i;
+    /^(ss|ssr|vmess|vless|trojan|hysteria2?|hy|hy2|tuic|snell|anytls|socks5|socks|wireguard|naive\+https?|naive\+quic|mierus):\/\//i;
 
 /**
  * 判断代理是否指向本机/未指定地址。

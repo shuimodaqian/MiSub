@@ -65,9 +65,16 @@ export function isManualNodeEntry(item) {
     const trimmedUrl = item.url.trim();
     if (!trimmedUrl) return false;
 
-    if (/^https?:\/\//i.test(trimmedUrl)) return false;
+    if (!/^https?:\/\//i.test(trimmedUrl)) return NODE_PROTOCOL_REGEX.test(trimmedUrl);
 
-    return NODE_PROTOCOL_REGEX.test(trimmedUrl);
+    // HTTP(S) endpoints are manual proxy nodes only when the URI authority
+    // contains userinfo and a host:port. Plain HTTP(S) URLs remain subscriptions.
+    try {
+        const parsed = new URL(trimmedUrl);
+        return Boolean(parsed.username && parsed.password && parsed.hostname && parsed.port);
+    } catch {
+        return false;
+    }
 }
 
 export function filterManualNodes(nodes, searchTerm, activeColorFilter) {

@@ -2,6 +2,7 @@ import yaml from 'js-yaml';
 import { clashFix } from '../../../utils/format-utils.js';
 import { normalizeUnifiedTemplateModel } from '../template-model.js';
 import { DNS_PROXY_GROUP, resolveSafeDnsConfig } from '../safe-dns.js';
+import { applyMihomoChainProxy } from '../mihomo-chain-proxy.js';
 
 function mapGroupType(type) {
     const normalized = String(type || '')
@@ -163,6 +164,13 @@ function mapRule(rule, ruleProviderMap) {
 
 export function renderClashFromTemplateModel(model) {
     const normalizedModel = normalizeUnifiedTemplateModel(model);
+
+    // 所有客户端都保留链式策略组；仅 Mihomo/Meta 展开节点级 dialer-proxy。
+    if (Array.isArray(normalizedModel.extras?.chainProxy)) {
+        applyMihomoChainProxy(normalizedModel, {
+            enableDialerProxy: Boolean(normalizedModel.meta?.isMeta),
+        });
+    }
 
     const ruleProviders = {};
     const ruleProviderMap = new Map();

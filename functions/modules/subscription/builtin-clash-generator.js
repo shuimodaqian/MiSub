@@ -148,14 +148,14 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
     // Stash 通过 #SUBSCRIBED <url> 注释行识别订阅地址以支持自动更新
     const isStashClient = /stash/i.test(userAgent || '');
 
-    // 解析节点 URL 列表（先清理控制字符）
+    // 解析节点 URL 列表（先清理控制字符）。
     const cleanedNodeList = cleanControlChars(nodeList);
-    const nodeUrls = cleanedNodeList
+    const nodeUrls = String(cleanedNodeList || '')
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line && !line.startsWith('#'));
 
-    // 转换为 Clash 代理对象
+    // URL 输入继续走既有转换逻辑。
     let proxies = urlsToClashProxies(nodeUrls, options);
 
     // 清理控制字符

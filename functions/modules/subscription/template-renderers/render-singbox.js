@@ -21,6 +21,25 @@ function buildOutbound(proxy) {
     const serverPort = parsePort(proxy.port);
     if (!serverPort) return null;
 
+    if (type === 'http' || type === 'https') {
+        const outbound = {
+            tag,
+            type: 'http',
+            server,
+            server_port: serverPort,
+            username: proxy.username || undefined,
+            password: proxy.password || undefined,
+        };
+        if (type === 'https' || proxy.tls || proxy.sni || proxy.servername) {
+            outbound.tls = {
+                enabled: true,
+                server_name: proxy.servername ?? proxy.sni ?? server,
+                insecure: proxy['skip-cert-verify'] === true || proxy.skipCertVerify === true,
+            };
+        }
+        return outbound;
+    }
+
     if (type === 'trojan') {
         return {
             tag,
